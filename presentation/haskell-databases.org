@@ -1,0 +1,148 @@
+#+TITLE: Using Databases In Haskell
+#+AUTHOR: Chris Barrett
+#+OPTIONS: toc:nil num:nil
+[[./owl.jpg]]
+
+* Overview
+
+This is an introduction to the following Haskell libraries:
+
+- [[http://www.stackage.org/package/persistent][Persistent]]
+- [[https://hackage.haskell.org/package/esqueleto][Esquelito]]
+- [[https://hackage.haskell.org/package/opaleye][Opaleye]]
+- [[https://github.com/bitemyapp/bloodhound][Bloodhound]]
+
+
+You will learn:
+
+- How to query relational databases like Postgres, and
+
+- How to query ElasticSearch, a popular non-relational document store.
+
+
+You will also see what Haskell looks like when written in anger.
+
+* Preliminaries
+
+- This is not a lecture! Interrupt me for questions
+
+
+- I make the following assumptions:
+
+  - You have a basic reading knowledge of Haskell
+
+  - You have used a relational database.
+
+* Postgres
+
+We'll be using [[http://www.postgresql.org/][PostgreSQL]] (a.k.a. Postgres) for our examples. Postgres is a
+freely available relational database system.
+
+** OSX
+#+BEGIN_SRC shell
+  brew install postgres
+#+END_SRC
+
+** Debian & Ubuntu
+#+BEGIN_SRC shell
+  sudo apt-get install postgresql
+#+END_SRC
+
+** Windows
+Follow the download [[http://www.postgresql.org/download/windows/][link]] on the PostgreSQL site.
+
+* ElasticSearch
+
+We will also use ElasticSearch. It is a document store that excels at
+full-text search.
+
+** OSX
+#+BEGIN_SRC shell
+  brew install elasticsearch
+#+END_SRC
+
+** Debian, Ubuntu
+#+BEGIN_SRC shell
+  sudo apt-get install elasticsearch
+#+END_SRC
+
+** Windows
+Follow the download [[https://www.elastic.co/downloads/elasticsearch][link]] on the ElasticSearch site.
+
+* Our Domain Model
+
+[[./dogecoin.jpg]]
+
+* Our Domain Model
+
+[[./doge-mining.jpg]]
+
+We will model a Dogecoin currency exchange.
+
+- =doges= are members of the exchange
+- =doges= have any number of =names=
+- =doges= have =wallets=
+- =wallets= have a non-negative balance
+- doges can pool their resources and form a =pack=.
+
+* Our Domain Model: SQL
+
+** doges
+#+BEGIN_SRC sql
+  CREATE TABLE doges (
+    id   SERIAL PRIMARY KEY
+  );
+
+  CREATE TABLE doge_names (
+    id        SERIAL PRIMARY KEY,
+    doge_id   INTEGER REFERENCES doges(id),
+    doge_name TEXT NOT NULL
+  );
+#+END_SRC
+** wallets
+#+BEGIN_SRC sql
+  CREATE TABLE wallets (
+    id      SERIAL PRIMARY KEY,
+    doge_id INTEGER REFERENCES doges(id),
+    coins   INTEGER NOT NULL CHECK (coins >= 0)
+  );
+#+END_SRC
+** packs
+#+BEGIN_SRC sql
+  CREATE TABLE packs (
+    id        SERIAL PRIMARY KEY,
+    pack_name TEXT NOT NULL
+  );
+
+  CREATE TABLE pack_members (
+    id      SERIAL PRIMARY KEY,
+    pack_id INTEGER REFERENCES packs(id),
+    doge_id INTEGER REFERENCES doges(id)
+  );
+#+END_SRC
+
+* Our Domain Model: Summary
+
+[[./pack.jpg]]
+
+- =doges= have any number of =names=
+- =doges= have =wallets=
+- =wallets= have a non-negative balance
+- doges can pool their resources and form a =pack=.
+
+* Persistent: Overview
+
+- Database-agnostic (bring-your-own-backend)
+- Provides a DSL for modelling your schema
+- Uses raw SQL strings for queries
+- Manages DB migrations for you.
+
+[[http://www.stackage.org/package/persistent][Stackage Link]]
+
+* Persistent:
+
+* Esquelito
+
+* Opaleye
+
+* Bloodhound
