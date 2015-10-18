@@ -16,6 +16,12 @@ library
   exposed-modules:     Persistent.Models
   build-depends:       base >= 4.7 && < 5
                      , persistent
+                     , persistent-postgresql
+                     , persistent-template
+                     , esqueleto
+                     , text
+                     , transformers
+                     , mtl
   default-language:    Haskell2010
 
 executable haskell-databases-exe

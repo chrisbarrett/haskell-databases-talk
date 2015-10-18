@@ -8,7 +8,7 @@
 This is an introduction to the following Haskell libraries:
 
 - [[http://www.stackage.org/package/persistent][Persistent]]
-- [[https://hackage.haskell.org/package/esqueleto][Esquelito]]
+- [[https://hackage.haskell.org/package/esqueleto][Esqueleto]]
 - [[https://hackage.haskell.org/package/opaleye][Opaleye]]
 - [[https://github.com/bitemyapp/bloodhound][Bloodhound]]
 
@@ -79,7 +79,7 @@ Follow the download [[https://www.elastic.co/downloads/elasticsearch][link]] on 
 
 We will model a Dogecoin currency exchange.
 
-- =doges= are members of the exchange
+- =doges= are users of the exchange
 - =doges= have any number of =names=
 - =doges= have =wallets=
 - =wallets= have a non-negative balance
@@ -121,7 +121,7 @@ We will model a Dogecoin currency exchange.
   );
 #+END_SRC
 
-* Our Domain Model: Summary
+* Our Domain Model: Review
 
 [[./pack.jpg]]
 
@@ -132,16 +132,187 @@ We will model a Dogecoin currency exchange.
 
 * Persistent: Overview
 
-- Database-agnostic (bring-your-own-backend)
+- Database-agnostic
+  - Support for specific database backends are provided as plugins
+  - MySQL
+  - Postgres
+  - SQLite
+
 - Provides a DSL for modelling your schema
-- Uses raw SQL strings for queries
+
+- Provides a simple typed DSL for queries, but you can also use raw SQL strings
+
 - Manages DB migrations for you.
 
 [[http://www.stackage.org/package/persistent][Stackage Link]]
 
-* Persistent:
+* Persistent: Entities DSL
 
-* Esquelito
+- Entities are written using a Template Haskell DSL
+- Implements serialisation typeclasses for you
+- Generates strongly-typed integer primary keys
+
+** SQL
+#+BEGIN_SRC sql
+CREATE TABLE packs (
+  id        SERIAL PRIMARY KEY,
+  pack_name TEXT NOT NULL
+);
+#+END_SRC
+
+** Persistent DSL
+#+begin_example
+Pack
+  packName Text
+#+end_example
+
+* Persistent: Entities DSL
+#+BEGIN_SRC haskell
+  module Persistent.Entities where
+  import           Data.Text           (Text)
+  import           Database.Persist.TH
+
+  mkPersist sqlSettings [persistLowerCase|
+
+  Pack
+    packName Text
+    deriving Show
+
+  |]
+#+END_SRC
+
+The code above is expanded into the following:
+
+[[./cover-the-heart.jpg]]
+
+#+BEGIN_SRC haskell
+  data Pack = Pack { packPackName :: !Text }
+    deriving (Show)
+
+  type PackId = Key Pack
+
+  instance PersistFieldSql Pack where
+    sqlType _ = SqlString
+
+  instance PersistField Pack where
+    toPersistValue entity =
+      PersistMap (zip (map pack ["packName"])
+                      (map toPersistValue (toPersistFields entity)))
+
+    fromPersistValue = runPersist <=< getPersistMap
+      where
+        runPersist x = fromPersistValues [name]
+          where name = fromMaybe PersistNull (lookup (pack "packName") (fromList x))
+
+
+  instance ToBackendKey SqlBackend Pack where
+    toBackendKey = unPackKey
+    fromBackendKey = PackKey
+
+
+  instance PersistEntity Pack where
+    type PersistEntityBackend Pack = SqlBackend
+    data Unique Pack
+
+    newtype Key Pack = PackKey {unPackKey :: BackendKey SqlBackend}
+      deriving (Show, Read, Eq, Ord,
+                PathPiece, PersistField, PersistFieldSql,
+                ToJSON, FromJSON)
+
+    data EntityField Pack typ = typ ~ Key Pack => PackId | typ ~ Text => PackPackName
+
+    keyToValues x = [toPersistValue (unPackKey x)]
+
+    keyFromValues = fmap PackKey . fromPersistValue . headNote
+
+    toPersistFields (Pack x) = [SomePersistField x]
+
+
+    fromPersistValues [x] =
+      Pack <$> (mapLeft (fieldError (packPTH "packName")) . fromPersistValue) x
+
+    fromPersistValues xs =
+      Left (mappend
+        (packPTH "Pack: fromPersistValues failed on: ")
+        (pack (show xs)))
+
+
+    persistUniqueToFieldNames _ = error "Degenerate case, should never happen"
+    persistUniqueToValues     _ = error "Degenerate case, should never happen"
+
+    persistUniqueKeys (Pack _) = []
+
+    persistFieldDef PackId =
+      FieldDef
+        (HaskellName (packPTH "Id"))
+        (DBName (packPTH "id"))
+        (FTTypeCon Nothing (packPTH "PackId"))
+        SqlInt64
+        []
+        True
+        (ForeignRef (HaskellName (packPTH "Pack"))
+                    (FTTypeCon (Just (packPTH "Data.Int")) (packPTH "Int64")))
+
+    persistFieldDef PackPackName =
+      FieldDef
+        (HaskellName (packPTH "packName"))
+        (DBName (packPTH "pack_name"))
+        (FTTypeCon Nothing (packPTH "Text"))
+        SqlString
+        []
+        True
+        NoReference
+
+    persistIdField = PackId
+
+    fieldLens PackId = lensPTH entityKey (\ (Entity _ v) k -> Entity k v)
+
+    fieldLens PackPackName = lensPTH (packPackName . entityVal)
+                                     (\ (Entity k v) x -> Entity k (v {packPackName = x}))
+
+    entityDef _ =
+      EntityDef
+        (HaskellName (packPTH "Pack"))
+        (DBName (packPTH "pack"))
+        (FieldDef
+            (HaskellName (packPTH "Id"))
+            (DBName (packPTH "id"))
+            (FTTypeCon Nothing (packPTH "PackId"))
+            SqlInt64
+            []
+            True
+            (ForeignRef
+              (HaskellName (packPTH "Pack"))
+              (FTTypeCon (Just (packPTH "Data.Int")) (packPTH "Int64"))))
+        []
+        [FieldDef
+            (HaskellName (packPTH "packName"))
+            (DBName (packPTH "pack_name"))
+            (FTTypeCon Nothing (packPTH "Text"))
+            SqlString
+            []
+            True
+            NoReference]
+        []
+        []
+        [packPTH "Show"]
+        (fromList [])
+        False
+#+END_SRC
+
+* Persistent: Entities DSL (Full Example)
+
+/Switch to code example/
+
+* Esqueleto: Overview
+
+- Type-safe SQL query DSL
+
+- Builds on =persistent=
+
+- Strives to mimic SQL while preserving type safety
+
+* Esqueleto:
 
 * Opaleye
 
