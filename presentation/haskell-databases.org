@@ -32,42 +32,38 @@ You will also see what Haskell looks like when written in anger.
 
   - You have used a relational database.
 
-
 * Postgres
 
 We'll be using [[http://www.postgresql.org/][PostgreSQL]] (a.k.a. Postgres) for our examples. Postgres is a
 freely available relational database system.
 
-** OSX
+** Installation
+
+*** OSX
 #+BEGIN_SRC shell
   brew install postgres
 #+END_SRC
 
-** Debian & Ubuntu
+*** Debian & Ubuntu
 #+BEGIN_SRC shell
   sudo apt-get install postgresql
 #+END_SRC
 
-** Windows
+*** Windows
 Follow the download [[http://www.postgresql.org/download/windows/][link]] on the PostgreSQL site.
 
-* ElasticSearch
-
-We will also use ElasticSearch. It is a document store that excels at
-full-text search.
-
-** OSX
-#+BEGIN_SRC shell
-  brew install elasticsearch
+** Set up new DB
+#+BEGIN_SRC sh
+  createdb dogecoin
+  # Make sure you can connect.
+  psql dogecoin
 #+END_SRC
 
-** Debian, Ubuntu
-#+BEGIN_SRC shell
-  sudo apt-get install elasticsearch
-#+END_SRC
+* Our Domain Model
 
-** Windows
-Follow the download [[https://www.elastic.co/downloads/elasticsearch][link]] on the ElasticSearch site.
+- We need to do something serious and /Enterprisey/
+
+- We should model a bank or a currency exchange or something.
 
 * Our Domain Model
 
@@ -85,39 +81,53 @@ We will model a Dogecoin currency exchange.
 - =wallets= have a non-negative balance
 - doges can pool their resources and form a =pack=.
 
+* Our Domain Model: Operations
+
+We want to be able to:
+
+- Register new doges
+
+- Add and remove coins from wallets
+
+- Add doges to packs
+
+- Find the wealthiest doge in a pack.
+
+[[./baller.jpg]]
+
 * Our Domain Model: SQL
 
 ** doges
 #+BEGIN_SRC sql
-  CREATE TABLE doges (
+  CREATE TABLE doge (
     id   SERIAL PRIMARY KEY
   );
 
-  CREATE TABLE doge_names (
+  CREATE TABLE doge_name (
     id        SERIAL PRIMARY KEY,
-    doge_id   INTEGER REFERENCES doges(id),
+    doge_id   INTEGER REFERENCES doge(id),
     doge_name TEXT NOT NULL
   );
 #+END_SRC
 ** wallets
 #+BEGIN_SRC sql
-  CREATE TABLE wallets (
+  CREATE TABLE wallet (
     id      SERIAL PRIMARY KEY,
-    doge_id INTEGER REFERENCES doges(id),
+    doge_id INTEGER REFERENCES doge(id),
     coins   INTEGER NOT NULL CHECK (coins >= 0)
   );
 #+END_SRC
 ** packs
 #+BEGIN_SRC sql
-  CREATE TABLE packs (
+  CREATE TABLE pack (
     id        SERIAL PRIMARY KEY,
     pack_name TEXT NOT NULL
   );
 
-  CREATE TABLE pack_members (
+  CREATE TABLE pack_member (
     id      SERIAL PRIMARY KEY,
-    pack_id INTEGER REFERENCES packs(id),
-    doge_id INTEGER REFERENCES doges(id)
+    pack_id INTEGER REFERENCES pack(id),
+    doge_id INTEGER REFERENCES doge(id)
   );
 #+END_SRC
 
@@ -125,18 +135,21 @@ We will model a Dogecoin currency exchange.
 
 [[./pack.jpg]]
 
-- =doges= have any number of =names=
-- =doges= have =wallets=
-- =wallets= have a non-negative balance
-- doges can pool their resources and form a =pack=.
+- =doges= have any number of =names= and =wallets=
+- doges can pool their resources and form a =pack=
+- we want to be able to find the top doges in a pack.
+
+* Haskell Time!
+
+[[./huskell.jpg]]
+
+* Libraries
+
+- We will generate our types with =Persistent=
+
+- We will query the database with =Esqueleto=
 
 * Persistent: Overview
-
-- Database-agnostic
-  - Support for specific database backends are provided as plugins
-  - MySQL
-  - Postgres
-  - SQLite
 
 - Provides a DSL for modelling your schema
 
@@ -144,17 +157,26 @@ We will model a Dogecoin currency exchange.
 
 - Manages DB migrations for you.
 
+- Database-agnostic
+  - Support for specific database backends are provided as plugins
+  - MySQL
+  - Postgres
+  - SQLite
+
+
 [[http://www.stackage.org/package/persistent][Stackage Link]]
 
 * Persistent: Entities DSL
 
 - Entities are written using a Template Haskell DSL
-- Implements serialisation typeclasses for you
-- Generates strongly-typed integer primary keys
+
+- Database serialisation is implemented for you
+
+- Generates strongly-typed primary key references.
 
 ** SQL
 #+BEGIN_SRC sql
-CREATE TABLE packs (
+CREATE TABLE pack (
   id        SERIAL PRIMARY KEY,
   pack_name TEXT NOT NULL
 );
@@ -167,8 +189,11 @@ Pack
 #+end_example
 
 * Persistent: Entities DSL
+
+
 #+BEGIN_SRC haskell
   module Persistent.Entities where
+
   import           Data.Text           (Text)
   import           Database.Persist.TH
 
@@ -181,12 +206,16 @@ Pack
   |]
 #+END_SRC
 
-The code above is expanded into the following:
+
+
+The code above is expanded into the following...
+
+* Persistent: Entities DSL (Expanded)
 
 [[./cover-the-heart.jpg]]
 
 #+BEGIN_SRC haskell
-  data Pack = Pack { packPackName :: !Text }
+  data Pack = Pack { packPackName ∷ !Text }
     deriving (Show)
 
   type PackId = Key Pack
@@ -214,12 +243,13 @@ The code above is expanded into the following:
     type PersistEntityBackend Pack = SqlBackend
     data Unique Pack
 
-    newtype Key Pack = PackKey {unPackKey :: BackendKey SqlBackend}
+    newtype Key Pack = PackKey { unPackKey ∷ BackendKey SqlBackend }
       deriving (Show, Read, Eq, Ord,
                 PathPiece, PersistField, PersistFieldSql,
                 ToJSON, FromJSON)
 
-    data EntityField Pack typ = typ ~ Key Pack => PackId | typ ~ Text => PackPackName
+    data EntityField Pack typ = typ ~ Key Pack ⇒ PackId
+                              | typ ~ Text ⇒ PackPackName
 
     keyToValues x = [toPersistValue (unPackKey x)]
 
@@ -265,10 +295,10 @@ The code above is expanded into the following:
 
     persistIdField = PackId
 
-    fieldLens PackId = lensPTH entityKey (\ (Entity _ v) k -> Entity k v)
+    fieldLens PackId = lensPTH entityKey (λ (Entity _ v) k → Entity k v)
 
     fieldLens PackPackName = lensPTH (packPackName . entityVal)
-                                     (\ (Entity k v) x -> Entity k (v {packPackName = x}))
+                                     (λ (Entity k v) x → Entity k (v {packPackName = x}))
 
     entityDef _ =
       EntityDef
@@ -300,44 +330,75 @@ The code above is expanded into the following:
         False
 #+END_SRC
 
-* Persistent: Entities DSL (Full Example)
+* Persistent: Entities DSL (Code Example)
 
-/Switch to code example/
+/Switch to entities code example/
 
 * Esqueleto: Overview
 
 - Type-safe SQL query DSL
 
-- Builds on =persistent=
+- Builds on =Persistent=
 
-- Strives to mimic SQL while preserving type safety
+- Strives to mimic SQL while preserving type safety.
+
+[[./skeletor.jpg]]
+
+
+[[https://hackage.haskell.org/package/esqueleto][Hackage link]]
 
 * Esqueleto: Queries
 
-- Uses
+** Find doges that have non-empty wallets
 
-** SQL
+*** SQL
 #+BEGIN_SRC sql
-  SELECT doge_id FROM Wallets WHERE coins > 0
+  SELECT DISTINCT doge_id FROM Wallets
+  WHERE coins > 0
 #+END_SRC
 
-** DSL
+*** Haskell
 #+BEGIN_SRC haskell
-  select $ from $ λwallet → do
-  where_ (wallet ^. WalletCoins >. val 0)
-  pure wallet
+  select $ distinct $ from $ λwallet → do
+  where_ $ wallet ^. WalletCoins >. val 0
+  pure $ wallet ^. WalletDogeId
 #+END_SRC
 
-* Esqueleto: Queries
-#+BEGIN_SRC haskell
-  type MonadDB = ReaderT PG.SqlBackend
+** Get name and personal wealth of the richest doge
 
-  nonEmptyWallets :: MonadIO m => MonadDB m [(Value (Key Doge))]
-  nonEmptyWallets =
-    select $
-    from $ \wallet -> do
-    where_ (wallet ^. WalletCoins >. val 0)
-    pure (wallet ^. WalletDogeId)
+*** SQL
+#+BEGIN_SRC sql
+  SELECT dn.doge_name, totals.coins
+  FROM (
+          SELECT doge_id, SUM(coins) AS coins
+          FROM wallet
+          GROUP BY doge_id
+      )
+      AS totals
+
+  INNER JOIN doge_name AS dn USING (doge_id)
+  ORDER BY coins DESC
+  LIMIT 1
 #+END_SRC
 
-* Bloodhound
+*** Haskell
+
+* Bloodhound & ElasticSearch
+[[./bloodhound.jpg]]
+[[https://github.com/bitemyapp/bloodhound][GitHub link]]
+
+- ElasticSearch is a document store that excels at full-text search.
+- Bloodhound is a Haskell client library.
+
+** OSX
+#+BEGIN_SRC shell
+  brew install elasticsearch
+#+END_SRC
+
+** Debian, Ubuntu
+#+BEGIN_SRC shell
+  sudo apt-get install elasticsearch
+#+END_SRC
+
+** Windows
+Follow the download [[https://www.elastic.co/downloads/elasticsearch][link]] on the ElasticSearch site.

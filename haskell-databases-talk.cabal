@@ -15,6 +15,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     CoinExchange.Models
   build-depends:       base >= 4.7 && < 5
+                     , monad-logger
                      , persistent
                      , persistent-postgresql
                      , persistent-template
