@@ -9,7 +9,6 @@ This is an introduction to the following Haskell libraries:
 
 - [[http://www.stackage.org/package/persistent][Persistent]]
 - [[https://hackage.haskell.org/package/esqueleto][Esqueleto]]
-- [[https://hackage.haskell.org/package/opaleye][Opaleye]]
 - [[https://github.com/bitemyapp/bloodhound][Bloodhound]]
 
 
@@ -32,6 +31,7 @@ You will also see what Haskell looks like when written in anger.
   - You have a basic reading knowledge of Haskell
 
   - You have used a relational database.
+
 
 * Postgres
 
@@ -312,8 +312,32 @@ The code above is expanded into the following:
 
 - Strives to mimic SQL while preserving type safety
 
-* Esqueleto:
+* Esqueleto: Queries
 
-* Opaleye
+- Uses
+
+** SQL
+#+BEGIN_SRC sql
+  SELECT doge_id FROM Wallets WHERE coins > 0
+#+END_SRC
+
+** DSL
+#+BEGIN_SRC haskell
+  select $ from $ λwallet → do
+  where_ (wallet ^. WalletCoins >. val 0)
+  pure wallet
+#+END_SRC
+
+* Esqueleto: Queries
+#+BEGIN_SRC haskell
+  type MonadDB = ReaderT PG.SqlBackend
+
+  nonEmptyWallets :: MonadIO m => MonadDB m [(Value (Key Doge))]
+  nonEmptyWallets =
+    select $
+    from $ \wallet -> do
+    where_ (wallet ^. WalletCoins >. val 0)
+    pure (wallet ^. WalletDogeId)
+#+END_SRC
 
 * Bloodhound

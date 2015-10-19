@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module Persistent.Models
+module CoinExchange.Models
        (
          MonadDB
        , Doge
@@ -8,18 +8,19 @@ module Persistent.Models
        , Name
        , name
        , registerDoge
+       , nonEmptyWallets
        , addCoin
        , richDoges
        , richestDoge
        ) where
 
+import           CoinExchange.Entities
 import           Control.Monad.IO.Class      (MonadIO)
 import           Control.Monad.Trans.Reader  (ReaderT)
 import           Data.Maybe
 import qualified Data.Text                   as T
 import           Database.Esqueleto
 import qualified Database.Persist.Postgresql as PG
-import           Persistent.Entities
 
 data ValidationError = EmptyNameError | SneakyCatError deriving (Show)
 
@@ -52,6 +53,13 @@ richDoges threshold =
     on (wallet ^. WalletDogeId ==. dogeName ^. DogeNameDogeId)
     where_ (wallet ^. WalletCoins >=. val threshold)
     pure dogeName
+
+nonEmptyWallets :: MonadIO m => MonadDB m [(Value (Key Doge))]
+nonEmptyWallets =
+  select $
+  from $ \wallet -> do
+  where_ (wallet ^. WalletCoins >. val 0)
+  pure (wallet ^. WalletDogeId)
 
 richestDoge :: MonadIO m => MonadDB m (Maybe (Entity DogeName))
 richestDoge =

@@ -4,7 +4,7 @@
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
-module Persistent.Entities where
+module CoinExchange.Entities where
 
 import           Data.Text           (Text)
 import           Database.Persist.TH
