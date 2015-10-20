@@ -9,15 +9,8 @@ This is an introduction to the following Haskell libraries:
 
 - [[http://www.stackage.org/package/persistent][Persistent]]
 - [[https://hackage.haskell.org/package/esqueleto][Esqueleto]]
-- [[https://github.com/bitemyapp/bloodhound][Bloodhound]]
 
-
-You will learn:
-
-- How to query relational databases like Postgres, and
-
-- How to query ElasticSearch, a popular non-relational document store.
-
+You will learn how to query relational databases like Postgres.
 
 You will also see what Haskell looks like when written in anger.
 
@@ -332,7 +325,7 @@ The code above is expanded into the following...
 
 * Persistent: Entities DSL (Code Example)
 
-/Switch to entities code example/
+/Switch to/ [[file:~/Documents/haskell-databases-talk/src/CoinExchange/Models.hs][code example]]
 
 * Esqueleto: Overview
 
@@ -364,41 +357,14 @@ The code above is expanded into the following...
   pure $ wallet ^. WalletDogeId
 #+END_SRC
 
-** Get name and personal wealth of the richest doge
+* Persistent: Entities DSL (Code Example)
 
-*** SQL
-#+BEGIN_SRC sql
-  SELECT dn.doge_name, totals.coins
-  FROM (
-          SELECT doge_id, SUM(coins) AS coins
-          FROM wallet
-          GROUP BY doge_id
-      )
-      AS totals
+/Switch to/ [[file:~/Documents/haskell-databases-talk/src/CoinExchange/Models.hs][code example]]
 
-  INNER JOIN doge_name AS dn USING (doge_id)
-  ORDER BY coins DESC
-  LIMIT 1
-#+END_SRC
+* Questions?
 
-*** Haskell
+[[./questions.jpg]]
 
-* Bloodhound & ElasticSearch
-[[./bloodhound.jpg]]
-[[https://github.com/bitemyapp/bloodhound][GitHub link]]
+* That's all folks!
 
-- ElasticSearch is a document store that excels at full-text search.
-- Bloodhound is a Haskell client library.
-
-** OSX
-#+BEGIN_SRC shell
-  brew install elasticsearch
-#+END_SRC
-
-** Debian, Ubuntu
-#+BEGIN_SRC shell
-  sudo apt-get install elasticsearch
-#+END_SRC
-
-** Windows
-Follow the download [[https://www.elastic.co/downloads/elasticsearch][link]] on the ElasticSearch site.
+[[./wow.jpg]]
