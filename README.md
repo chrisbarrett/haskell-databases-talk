@@ -1,6 +1,6 @@
 # Using Databases in Haskell
 
-Demonstrates using Postgres and Elasticsearch in Haskell.
+Demonstrates using Postgres in Haskell.
 
 ## Overview
 
