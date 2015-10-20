@@ -47,10 +47,14 @@ Follow the download [[http://www.postgresql.org/download/windows/][link]] on the
 
 ** Set up new DB
 #+BEGIN_SRC sh
-  createdb dogecoin
+  createdb <name>
   # Make sure you can connect.
-  psql dogecoin
+  psql <name>
 #+END_SRC
+
+* Question: What is this?
+
+[[./belly.jpg]]
 
 * Our Domain Model
 
