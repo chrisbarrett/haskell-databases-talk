@@ -4,6 +4,7 @@ module Views.Table
          render
        , TableView
        , makeTable
+       , renderTuple
        )
        where
 
@@ -25,3 +26,6 @@ render (TableView header values) =
   where
     sep = T.replicate (T.length header) "-"
     content = T.intercalate "\n" values
+
+renderTuple :: (Show a, Show b) => (a, b) -> T.Text
+renderTuple (a, b) = T.concat [T.pack (show a), ", ", T.pack (show b)]

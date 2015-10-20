@@ -16,6 +16,7 @@ library
   exposed-modules:     CoinExchange.Models
   build-depends:       base >= 4.7 && < 5
                      , monad-logger
+                     , lens
                      , persistent
                      , persistent-postgresql
                      , persistent-template
