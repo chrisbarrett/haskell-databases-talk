@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE UnicodeSyntax     #-}
 module Main where
 
 import qualified CoinExchange.Models         as Model
@@ -15,7 +16,7 @@ connTimeout = 10
 
 richnessThreshold = 200
 
-main :: IO ()
+main ∷ IO ()
 main = do
     runMigrations
     printRichList
@@ -29,17 +30,17 @@ main = do
     printBlankLine = T.putStrLn "\n"
 
     printRichList = do
-        doges <- runDB $ Model.richDoges richnessThreshold
+        doges ← runDB $ Model.richDoges richnessThreshold
         let rows = map (T.pack . show) doges
         T.putStrLn $ View.render $ View.makeTable "Richest Doges" rows
 
     printAssets = do
-        assets <- runDB Model.dogeAssets
+        assets ← runDB Model.dogeAssets
         let rows = map View.renderTuple assets
         T.putStrLn $ View.render $ View.makeTable "Balances" rows
 
 
-runDB :: DB.SqlPersistM a -> IO a
+runDB ∷ DB.SqlPersistM a → IO a
 runDB f =
     Logger.runNoLoggingT $
     DB.withPostgresqlPool connStr connTimeout $
