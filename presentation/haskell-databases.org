@@ -56,6 +56,12 @@ Follow the download [[http://www.postgresql.org/download/windows/][link]] on the
 
 [[./belly.jpg]]
 
+* Correct!
+
+[[./belly.jpg]]
+
+^^ This is a /doge/
+
 * Our Domain Model
 
 - We need to do something serious and /Enterprisey/
