@@ -335,7 +335,7 @@ The code above is expanded into the following...
 
 * Persistent: Entities DSL (Code Example)
 
-/Switch to/ [[file:~/Documents/haskell-databases-talk/src/CoinExchange/Models.hs][code example]]
+/Switch to/ [[file:../src/CoinExchange/Models.hs][code example]]
 
 * Esqueleto: Overview
 
@@ -369,7 +369,7 @@ The code above is expanded into the following...
 
 * Persistent: Entities DSL (Code Example)
 
-/Switch to/ [[file:~/Documents/haskell-databases-talk/src/CoinExchange/Models.hs][code example]]
+/Switch to/ [[file:../src/CoinExchange/Models.hs][code example]]
 
 * Questions?
 
