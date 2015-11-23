@@ -12,7 +12,11 @@ This is an introduction to the following Haskell libraries:
 
 You will learn how to query relational databases like Postgres.
 
-You will also see what Haskell looks like when written in anger.
+You will also see a bit of what Haskell looks like when written in anger.
+
+Code here:
+
+  [[https://github.com/chrisbarrett/haskell-databases-talk][github.com/chrisbarrett/haskell-databases-talk]]
 
 * Preliminaries
 
@@ -371,10 +375,25 @@ The code above is expanded into the following...
 
 /Switch to/ [[file:../src/CoinExchange/Models.hs][code example]]
 
+* Review
+- We read through a simple application that performs database insertions and
+  queries
+
+- We saw how to use =Persistent= to
+  - define a DB schema
+  - map that schema to Haskell types
+  - define SQL migrations
+
+- We saw how to use =Esqueleto= to write queries over those generated types.
+
 * Questions?
 
 [[./questions.jpg]]
 
 * That's all folks!
+
+The code is available on GitHub:
+
+  [[https://github.com/chrisbarrett/haskell-databases-talk][github.com/chrisbarrett/haskell-databases-talk]]
 
 [[./wow.jpg]]
