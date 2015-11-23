@@ -24,8 +24,15 @@ import qualified Data.Text                   as T
 import           Database.Esqueleto
 import qualified Database.Persist.Postgresql as PG
 
+-- * Doge Names
+--
+-- Define a type @Name@ and smart constructor @name@ for doge names.
+--
+-- The smart constructor validates that doges attempting to join the exchange
+-- are not in fact cats in disguise.
 
-newtype Name = Name T.Text deriving (Show)
+newtype Name = Name T.Text
+  deriving (Show)
 
 data ValidationError = EmptyNameError | SneakyCatError deriving (Show)
 
@@ -37,15 +44,44 @@ name = validate . T.strip
     validate n     = Right (Name n)
 
 
+-- * Type aliases
+--
+-- Use existential types to hide some unneeded type variables.
 
 type MonadDB a = ∀ m. MonadIO m ⇒ ReaderT PG.SqlBackend m a
+
 type Query a = ∀ m. MonadIO m ⇒ SqlPersistT m a
+
+
+-- * Queries
 
 registerDoge ∷ Name → MonadDB (Key Doge, Key DogeName)
 registerDoge (Name nm) = do
     doge ← PG.insert Doge
     dogeName ← PG.insert $ DogeName doge nm
     pure (doge, dogeName)
+
+
+
+newtype TotalCoins = TotalCoins Integer
+  deriving (Show)
+
+newtype Id = Id Integer
+  deriving (Show)
+
+dogeAssets ∷ MonadIO m ⇒ ReaderT SqlBackend m [(Id, TotalCoins)]
+dogeAssets = do
+    assets ←
+        select $ from $ \wallet → do
+        groupBy (wallet ^. WalletDogeId)
+        let total = sum_ (wallet ^. WalletCoins)
+        pure (wallet ^. WalletDogeId, total)
+
+    pure $ map fromSql assets
+  where
+    fromSql = Lens.bimap toId sumToCoins
+    toId = Id . toInteger . unSqlBackendKey . unDogeKey . unValue
+    sumToCoins = TotalCoins . Ratio.numerator . Maybe.fromMaybe 0 . unValue
 
 
 
@@ -61,22 +97,3 @@ richDoges threshold = do
         pure dogeName
 
     pure $ map (Name . dogeNameDogeName . entityVal) names
-
-
-newtype TotalCoins = TotalCoins Integer deriving (Show)
-
-newtype Id = Id Integer deriving (Show)
-
-dogeAssets ∷ MonadIO m ⇒ ReaderT SqlBackend m [(Id, TotalCoins)]
-dogeAssets = do
-    assets ←
-        select $ from $ \wallet → do
-        groupBy (wallet ^. WalletDogeId)
-        let total = sum_ (wallet ^. WalletCoins)
-        pure (wallet ^. WalletDogeId, total)
-
-    pure $ map fromSql assets
-  where
-    fromSql = Lens.bimap toId sumToCoins
-    toId = Id . toInteger . unSqlBackendKey . unDogeKey . unValue
-    sumToCoins = TotalCoins . Ratio.numerator . Maybe.fromMaybe 0 . unValue
