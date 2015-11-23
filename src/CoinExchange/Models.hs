@@ -54,7 +54,7 @@ type MinCoins = Int
 richDoges ∷ MinCoins → Query [Name]
 richDoges threshold = do
     names ←
-        select $
+        select $ distinct $
         from $ \(dogeName `InnerJoin` wallet) → do
         on (wallet ^. WalletDogeId ==. dogeName ^. DogeNameDogeId)
         where_ (wallet ^. WalletCoins >=.  val threshold)
