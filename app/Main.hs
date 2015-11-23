@@ -3,7 +3,7 @@
 {-# LANGUAGE UnicodeSyntax     #-}
 module Main where
 
-import qualified CoinExchange.Models         as Model
+import qualified CoinExchange.Models         as Models
 import qualified Control.Monad.Logger        as Logger
 import qualified Data.Text                   as T
 import qualified Data.Text.IO                as T
@@ -25,17 +25,17 @@ main = do
 
   where
 
-    runMigrations = runDB $ DB.runMigration Model.migrateAll
+    runMigrations = runDB $ DB.runMigration Models.migrateAll
 
     printBlankLine = T.putStrLn "\n"
 
     printRichList = do
-        doges ← runDB $ Model.richDoges richnessThreshold
+        doges ← runDB $ Models.richDoges richnessThreshold
         let rows = map (T.pack . show) doges
         T.putStrLn $ View.render $ View.makeTable "Richest Doges" rows
 
     printAssets = do
-        assets ← runDB Model.dogeAssets
+        assets ← runDB Models.dogeAssets
         let rows = map View.renderTuple assets
         T.putStrLn $ View.render $ View.makeTable "Balances" rows
 
